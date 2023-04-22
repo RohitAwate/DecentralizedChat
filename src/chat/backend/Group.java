@@ -1,6 +1,4 @@
-package chat.server;
-
-import chat.server.paxos.PaxosParticipant;
+package chat.backend;
 
 import java.util.ArrayList;
 import java.util.List;

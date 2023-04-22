@@ -1,7 +1,6 @@
-package chat.server.paxos;
+package chat.backend.paxos;
 
-import chat.server.Group;
-import chat.server.Operation;
+import chat.backend.Operation;
 
 import java.io.Serializable;
 import java.util.Objects;

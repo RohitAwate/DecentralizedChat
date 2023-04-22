@@ -1,6 +1,6 @@
-package chat.server.paxos;
+package chat.backend.paxos;
 
-import chat.server.Result;
+import chat.backend.Result;
 
 import java.io.Serializable;
 

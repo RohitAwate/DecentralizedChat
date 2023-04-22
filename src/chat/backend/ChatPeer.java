@@ -1,4 +1,4 @@
-package chat.server;
+package chat.backend;
 
 import java.net.InetSocketAddress;
 import java.rmi.Remote;
@@ -16,5 +16,5 @@ public interface ChatPeer extends Remote {
      */
     InetSocketAddress getAddress() throws RemoteException;
 
-    String getDisplayName();
+    String getDisplayName() throws RemoteException;
 }

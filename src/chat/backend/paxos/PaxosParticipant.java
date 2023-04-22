@@ -1,4 +1,4 @@
-package chat.server.paxos;
+package chat.backend.paxos;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;

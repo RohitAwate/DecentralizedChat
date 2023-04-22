@@ -1,4 +1,4 @@
-package chat.server;
+package chat.backend;
 
 import java.io.Serializable;
 

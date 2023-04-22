@@ -1,9 +1,9 @@
-package chat.server.paxos;
+package chat.backend.paxos;
 
 import chat.logging.Logger;
-import chat.server.ChatPeer;
-import chat.server.Group;
-import chat.server.Result;
+import chat.backend.ChatPeer;
+import chat.backend.Group;
+import chat.backend.Result;
 
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 
-import static chat.server.paxos.PaxosResponse.Status.ACCEPTED;
+import static chat.backend.paxos.PaxosResponse.Status.ACCEPTED;
 
 /**
  * PaxosEngine runs the Paxos protocol on behalf of a replica.
@@ -69,7 +69,7 @@ public class PaxosEngine {
                 String msg = "Could not reach Paxos consensus while running your operation.";
                 return Result.failure(msg);
             } else if (response.equals(ConsensusResponse.CONSENSUS_PREEMPTED)) {
-                Logger.logMessage("Paxos: Consensus Preempted i.e. received ACCEPTED proposal during PREPARE phase");
+                Logger.logInfo("Paxos: Consensus Preempted i.e. received ACCEPTED proposal during PREPARE phase");
                 paxosProposal.operation = response.acceptedPaxosProposal.operation;
             }
         }

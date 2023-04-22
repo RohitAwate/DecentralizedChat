@@ -1,12 +1,11 @@
-package chat.server;
+package chat.backend;
 
 import chat.logging.Logger;
-import chat.server.paxos.PaxosEngine;
-import chat.server.paxos.PaxosParticipant;
-import chat.server.paxos.PaxosProposal;
-import chat.server.paxos.PaxosResponse;
+import chat.backend.paxos.PaxosEngine;
+import chat.backend.paxos.PaxosParticipant;
+import chat.backend.paxos.PaxosProposal;
+import chat.backend.paxos.PaxosResponse;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
@@ -15,9 +14,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static chat.server.Operation.OpType.JOIN_GROUP;
+import static chat.backend.Operation.OpType.JOIN_GROUP;
 
 public class ChatPeerImpl extends UnicastRemoteObject implements ChatPeer, PaxosParticipant {
 
@@ -34,7 +32,7 @@ public class ChatPeerImpl extends UnicastRemoteObject implements ChatPeer, Paxos
 
         LocateRegistry.createRegistry(port);
         Naming.rebind(String.format("rmi://localhost:%d/DistributedChatPeer", port), this);
-        Logger.logMessage(String.format("Replica is up on port %d", port));
+        Logger.logInfo(String.format("Chat engine start on port %s", address));
 
         paxosEngine = new PaxosEngine();
     }
@@ -88,7 +86,7 @@ public class ChatPeerImpl extends UnicastRemoteObject implements ChatPeer, Paxos
 
     @Override
     public PaxosResponse prepare(PaxosProposal paxosProposal) throws RemoteException {
-        Logger.logMessage("Paxos Prepare: Received proposal");
+        Logger.logInfo("Paxos Prepare: Received proposal");
 
         // Simulating a failure
         if (Math.random() <= PAXOS_FAILURE_PROBABILITY) {
@@ -101,10 +99,10 @@ public class ChatPeerImpl extends UnicastRemoteObject implements ChatPeer, Paxos
             this.paxosMaxID = paxosProposal.id;
 
             if (this.accepted != null) {
-                Logger.logMessage("Paxos Prepare: Returning previously ACCEPTED proposal");
+                Logger.logInfo("Paxos Prepare: Returning previously ACCEPTED proposal");
                 return PaxosResponse.ACCEPTED(this.accepted);
             } else {
-                Logger.logMessage("Paxos Prepare: Returning PROMISED for proposal");
+                Logger.logInfo("Paxos Prepare: Returning PROMISED for proposal");
                 return PaxosResponse.PROMISED(paxosProposal);
             }
         } else {
@@ -115,7 +113,7 @@ public class ChatPeerImpl extends UnicastRemoteObject implements ChatPeer, Paxos
 
     @Override
     public PaxosResponse accept(PaxosProposal paxosProposal) throws RemoteException {
-        Logger.logMessage("Paxos Accept: Received proposal for acceptance");
+        Logger.logInfo("Paxos Accept: Received proposal for acceptance");
 
         // Simulating a failure
         if (Math.random() <= PAXOS_FAILURE_PROBABILITY) {
@@ -124,25 +122,25 @@ public class ChatPeerImpl extends UnicastRemoteObject implements ChatPeer, Paxos
 
         if (paxosProposal.id == this.paxosMaxID) {
             this.accepted = paxosProposal;
-            Logger.logMessage("Paxos Accept: Accepting proposal");
+            Logger.logInfo("Paxos Accept: Accepting proposal");
             return PaxosResponse.ACCEPTED(paxosProposal);
         } else {
-            Logger.logMessage("Paxos Accept: Rejecting proposal");
+            Logger.logInfo("Paxos Accept: Rejecting proposal");
             return PaxosResponse.REJECTED(paxosProposal);
         }
     }
 
     @Override
     public PaxosResponse learn(PaxosProposal paxosProposal) throws RemoteException {
-        Logger.logMessage("Paxos Learn: Received proposal for learning");
+        Logger.logInfo("Paxos Learn: Received proposal for learning");
 
         Result result = this.dispatch(paxosProposal.operation);
         if (result.success) {
             this.accepted = null;
-            Logger.logMessage("Paxos Learn: Learned proposal successfully");
+            Logger.logInfo("Paxos Learn: Learned proposal successfully");
             return PaxosResponse.OK(paxosProposal, result);
         } else {
-            Logger.logMessage("Paxos Learn: Failed while learning proposal");
+            Logger.logInfo("Paxos Learn: Failed while learning proposal");
             return PaxosResponse.FAILED(paxosProposal, result);
         }
     }
@@ -176,27 +174,5 @@ public class ChatPeerImpl extends UnicastRemoteObject implements ChatPeer, Paxos
         PaxosProposal paxosProposal = new PaxosProposal(operation);
         this.paxosMaxID = paxosProposal.id;
         return paxosProposal;
-    }
-    /*
-        Entry point for replica server.
-     */
-
-    public static void main(String[] args) throws IOException {
-        // Check if the required command line arguments are provided
-        if (args.length < 2) {
-            System.err.println("Expected arguments: <self_port> <replica_port_1> <replica_port_2> ... <replica_port_n>");
-            System.exit(1);
-        }
-
-        // Parse args and get self port and peer ports
-        String[] peerPortsStr = Arrays.copyOfRange(args, 1, args.length);
-        List<Integer> peerPorts = Arrays.stream(peerPortsStr)
-                .map(Integer::parseInt)
-                .collect(Collectors.toList());
-
-        int selfPort = Integer.parseInt(args[0]);
-
-        // Create a server instance
-        new ChatPeerImpl("Rohit", 8080);
     }
 }
