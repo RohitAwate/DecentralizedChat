@@ -1,7 +1,6 @@
-package bsds.client;
+package chat.client;
 
-import bsds.server.KeyValueStore;
-import bsds.server.Result;
+import chat.server.Result;
 
 import java.rmi.Naming;
 import java.rmi.RemoteException;

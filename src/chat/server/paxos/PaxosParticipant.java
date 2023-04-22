@@ -1,4 +1,4 @@
-package bsds.server.paxos;
+package chat.server.paxos;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;

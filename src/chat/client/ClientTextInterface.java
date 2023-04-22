@@ -1,6 +1,6 @@
-package bsds.client;
+package chat.client;
 
-import bsds.logging.Logger;
+import chat.logging.Logger;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;

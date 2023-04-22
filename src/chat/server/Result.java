@@ -1,4 +1,4 @@
-package bsds.server;
+package chat.server;
 
 import java.io.Serializable;
 

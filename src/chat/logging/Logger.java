@@ -1,6 +1,6 @@
-package bsds.logging;
+package chat.logging;
 
-import bsds.server.Operation;
+import chat.server.Operation;
 
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
@@ -21,16 +21,6 @@ public class Logger {
      * Log a message to STDOUT.
      */
     public static void logMessage(String msg) {
-        log(msg, System.out);
-    }
-
-    /**
-     * Logs the operation type and its args to STDOUT.
-     *
-     * @param op the operation to log
-     */
-    public static void logOperation(Operation op) {
-        String msg = String.format("%s %s", op.type, Arrays.toString(op.args));
         log(msg, System.out);
     }
 

@@ -1,6 +1,7 @@
-package bsds.server.paxos;
+package chat.server.paxos;
 
-import bsds.server.Operation;
+import chat.server.Group;
+import chat.server.Operation;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -17,14 +18,14 @@ public class PaxosProposal implements Serializable {
     /**
      * The operation to be proposed.
      */
-    public Operation operation;
+    public Operation<?> operation;
 
     /**
      * Creates a new PaxosProposal object with a unique identifier and the given operation.
      *
      * @param operation the operation to be proposed
      */
-    public PaxosProposal(Operation operation) {
+    public PaxosProposal(Operation<?> operation) {
         this.id = System.nanoTime();
         this.operation = operation;
     }

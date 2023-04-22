@@ -1,4 +1,4 @@
-package bsds.client;
+package chat.client;
 
 /**
  * Entrypoint for the client.

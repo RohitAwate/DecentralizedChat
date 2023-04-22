@@ -1,6 +1,6 @@
-package bsds.server.paxos;
+package chat.server.paxos;
 
-import bsds.server.Result;
+import chat.server.Result;
 
 import java.io.Serializable;
 

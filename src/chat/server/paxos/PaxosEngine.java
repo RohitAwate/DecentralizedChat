@@ -1,8 +1,11 @@
-package bsds.server.paxos;
+package chat.server.paxos;
 
-import bsds.logging.Logger;
-import bsds.server.Result;
+import chat.logging.Logger;
+import chat.server.ChatPeer;
+import chat.server.Group;
+import chat.server.Result;
 
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
@@ -13,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 
-import static bsds.server.paxos.PaxosResponse.Status.ACCEPTED;
+import static chat.server.paxos.PaxosResponse.Status.ACCEPTED;
 
 /**
  * PaxosEngine runs the Paxos protocol on behalf of a replica.
@@ -21,8 +24,6 @@ import static bsds.server.paxos.PaxosResponse.Status.ACCEPTED;
  */
 public class PaxosEngine {
     private final ExecutorService executorService;
-    private final List<Integer> participantPorts;
-    private final List<PaxosParticipant> participants = new ArrayList<>();
 
     private static final double CONSENSUS_THRESHOLD = 0.5;
 
@@ -30,9 +31,8 @@ public class PaxosEngine {
      * Create a PaxosEngine instance that utilizes a thread pool
      * of the given size to dispatch messages to other PaxosParticipants.
      */
-    public PaxosEngine(int threads, List<Integer> replicaPorts) {
-        this.executorService = Executors.newFixedThreadPool(threads);
-        this.participantPorts = replicaPorts;
+    public PaxosEngine() {
+        this.executorService = Executors.newCachedThreadPool();
     }
 
     /**
@@ -48,17 +48,21 @@ public class PaxosEngine {
      * the proposal received a consensual acceptance or some other situation.
      *
      * @param paxosProposal - proposal to run Paxos for
+     * @param group
      * @return - Result of the process
      */
-    public Result run(PaxosProposal paxosProposal) throws NotBoundException, RemoteException {
-        connectToParticipants();
-
-        PaxosStage[] stages = new PaxosStage[]{PaxosStage.PREPARE, PaxosStage.ACCEPT, PaxosStage.LEARN};
+    public Result run(PaxosProposal paxosProposal, Group group) throws NotBoundException, RemoteException {
+        List<PaxosParticipant> participants = connectToPeers(group);
+        PaxosStage[] stages = new PaxosStage[]{
+                PaxosStage.PREPARE,
+                PaxosStage.ACCEPT,
+                PaxosStage.LEARN
+        };
 
         List<PaxosResponse> responses = null;
         for (PaxosStage stage : stages) {
-            responses = this.dispatch(paxosProposal, stage);
-            ConsensusResponse response = isConsensus(responses, stage);
+            responses = this.dispatch(paxosProposal, stage, participants);
+            ConsensusResponse response = isConsensus(responses, stage, participants);
 
             if (response.equals(ConsensusResponse.CONSENSUS_NOT_REACHED)) {
                 Logger.logError("Paxos: Consensus not reached during " + stage);
@@ -97,11 +101,12 @@ public class PaxosEngine {
     /**
      * Determines if a consensus is reached from the collected responses.
      *
-     * @param responses - responses from participants
-     * @param stage     - stage of the protocol
+     * @param responses    - responses from participants
+     * @param stage        - stage of the protocol
+     * @param participants
      * @return ConsensusResponse enum
      */
-    private ConsensusResponse isConsensus(List<PaxosResponse> responses, PaxosStage stage) {
+    private ConsensusResponse isConsensus(List<PaxosResponse> responses, PaxosStage stage, List<PaxosParticipant> participants) {
         // If stage is PREPARE, we must check for any ACCEPTED responses
         // which indicate that the acceptors already accepted a proposal
         // with a higher ID. In that situation, we pick the proposal
@@ -162,9 +167,10 @@ public class PaxosEngine {
      *
      * @param paxosProposal - proposal used in the protocol
      * @param stage         - stage currently being executed
+     * @param participants
      * @return responses from the participants
      */
-    private List<PaxosResponse> dispatch(PaxosProposal paxosProposal, PaxosStage stage) {
+    private List<PaxosResponse> dispatch(PaxosProposal paxosProposal, PaxosStage stage, List<PaxosParticipant> participants) {
         CompletionService<PaxosResponse> service = new ExecutorCompletionService<>(executorService);
 
         for (PaxosParticipant participant : participants) {
@@ -196,27 +202,20 @@ public class PaxosEngine {
         return responses;
     }
 
-    /**
-     * Connects to the {@code PaxosParticipant}s and returns the list of connected participants.
-     *
-     * @throws NotBoundException if a remote object could not be found with the specified name
-     * @throws RemoteException   if a communication-related exception occurs while communicating with a remote object
-     */
-    private void connectToParticipants() throws NotBoundException, RemoteException {
-        // Check if already connected previously
-        if (participantPorts.size() == this.participants.size()) {
-            return;
-        }
+    private static List<PaxosParticipant> connectToPeers(Group group) throws NotBoundException, RemoteException {
+        List<PaxosParticipant> participants = new ArrayList<>();
 
-        for (int port : participantPorts) {
+        for (ChatPeer peer : group.peers) {
             try {
-                String url = String.format("rmi://localhost:%d/Replica", port);
+                InetSocketAddress address = peer.getAddress();
+                String url = String.format("rmi://%s:%d/DistributedChatPeer", address.getHostString(), address.getPort());
                 PaxosParticipant participant = (PaxosParticipant) Naming.lookup(url);
-                this.participants.add(participant);
+                participants.add(participant);
             } catch (MalformedURLException e) {
                 Logger.logError(e.getMessage());
             }
         }
 
+        return participants;
     }
 }
