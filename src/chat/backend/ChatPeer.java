@@ -3,10 +3,9 @@ package chat.backend;
 import java.net.InetSocketAddress;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.List;
 
 public interface ChatPeer extends Remote {
-    List<ChatPeer> joinGroup(String name, ChatPeer peer) throws RemoteException;
+    Group acceptJoin(String name, ChatPeer peer) throws RemoteException;
 
     /**
      * Returns the address of this participant.

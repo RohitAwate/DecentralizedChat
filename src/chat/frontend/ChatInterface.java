@@ -1,7 +1,7 @@
 package chat.frontend;
 
-import chat.backend.ChatPeer;
-import chat.backend.ChatPeerImpl;
+import chat.backend.ChatBackend;
+import chat.backend.ChatEngine;
 import chat.logging.Logger;
 
 import java.io.IOException;
@@ -9,10 +9,10 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class ChatInterface {
-    private final ChatPeer engine;
+    private final ChatBackend backend;
 
     public ChatInterface(String displayName, int selfPort) throws IOException {
-        this.engine = new ChatPeerImpl(displayName, selfPort);
+        this.backend = new ChatEngine(displayName, selfPort);
     }
 
     /**
@@ -37,13 +37,58 @@ public class ChatInterface {
                     continue;
                 }
 
-                System.out.println(command);
+                processCommand(command);
             } catch (NoSuchElementException e) {
                 // Thrown when user hits Ctrl + D
                 Logger.logInfo("Goodbye!");
                 System.exit(0);
             }
         }
+    }
+
+    private void processCommand(String command) {
+        String[] tokens = command.trim().split("\\s+");
+
+        // Check the first token to see which command it is.
+        // Dispatch control to respective handler.
+        // Syntax is case-insensitive.
+        String op = tokens[0];
+        switch (op.toLowerCase()) {
+            case "join":
+                this.joinGroupHandler(tokens);
+                break;
+            case "create":
+                this.createGroupHandler(tokens);
+                break;
+            default:
+                System.out.println("Unrecognized command: " + op);
+        }
+    }
+
+    private void joinGroupHandler(String[] args) {
+        // Error checking for number of tokens
+        if (args.length != 4) {
+            System.out.println("Invalid syntax for JOIN. Usage: JOIN <ip> <port> <group_name>");
+            return;
+        }
+
+        String ip = args[1];
+        int port = Integer.parseInt(args[2]);
+        String groupName = args[3];
+
+        if (backend.joinGroup(ip, port, groupName)) {
+
+        }
+    }
+
+    private void createGroupHandler(String[] tokens) {
+        // Error checking for number of tokens
+        if (tokens.length != 4) {
+            System.out.println("Invalid syntax for JOIN. Usage: JOIN <ip> <port> <group_name>");
+            return;
+        }
+
+        System.out.println(tokens);
     }
 
     // Entry point for replica server.

@@ -1,10 +1,10 @@
 package chat.backend;
 
-import chat.logging.Logger;
 import chat.backend.paxos.PaxosEngine;
 import chat.backend.paxos.PaxosParticipant;
 import chat.backend.paxos.PaxosProposal;
 import chat.backend.paxos.PaxosResponse;
+import chat.logging.Logger;
 
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -13,17 +13,19 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static chat.backend.Operation.OpType.JOIN_GROUP;
 
-public class ChatPeerImpl extends UnicastRemoteObject implements ChatPeer, PaxosParticipant {
+public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBackend, PaxosParticipant {
 
     private final InetSocketAddress address;
     private final String displayName;
     private final Map<String, Group> groups;
 
-    public ChatPeerImpl(String displayName, int port) throws RemoteException, MalformedURLException {
+    public ChatEngine(String displayName, int port) throws RemoteException, MalformedURLException {
         super();
 
         this.displayName = displayName;
@@ -37,6 +39,34 @@ public class ChatPeerImpl extends UnicastRemoteObject implements ChatPeer, Paxos
         paxosEngine = new PaxosEngine();
     }
 
+    @Override
+    public boolean joinGroup(String ip, int port, String groupName) {
+        String url = String.format("rmi://%s:%d/DistributedChatPeer", ip, port);
+        try {
+            ChatPeer peer = (ChatPeer) Naming.lookup(url);
+            Group group = peer.acceptJoin(groupName, this);
+            if (group == null) {
+                return false;
+            }
+
+            groups.put(groupName, group);
+            return true;
+        } catch (NotBoundException | MalformedURLException | RemoteException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public void sendMessage(String message, String groupName) {
+
+    }
+
+    @Override
+    public List<Group> getGroups() {
+        return null;
+    }
+
+    @Override
     public boolean createGroup(String name) {
         if (groups.containsKey(name)) {
             return false;
@@ -47,7 +77,7 @@ public class ChatPeerImpl extends UnicastRemoteObject implements ChatPeer, Paxos
     }
 
     @Override
-    public List<ChatPeer> joinGroup(String name, ChatPeer peer) throws RemoteException {
+    public Group acceptJoin(String name, ChatPeer peer) throws RemoteException {
         if (!groups.containsKey(name)) {
             throw new IllegalArgumentException("No such group: " + name);
         }
@@ -58,13 +88,13 @@ public class ChatPeerImpl extends UnicastRemoteObject implements ChatPeer, Paxos
         try {
             Result result = paxosEngine.run(proposal, group);
             if (result.success) {
-                return group.peers;
+                return group;
             }
         } catch (NotBoundException e) {
             // Just return an empty list
         }
 
-        return new ArrayList<>();
+        return null;
     }
 
     @Override
