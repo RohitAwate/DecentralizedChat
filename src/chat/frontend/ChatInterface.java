@@ -9,18 +9,10 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class ChatInterface {
-    private ChatPeer engine;
+    private final ChatPeer engine;
 
     public ChatInterface(String displayName, int selfPort) throws IOException {
-        Runnable serverThread = () -> {
-            try {
-                this.engine = new ChatPeerImpl(displayName, selfPort);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        };
-
-        new Thread(serverThread).start();
+        this.engine = new ChatPeerImpl(displayName, selfPort);
     }
 
     /**
