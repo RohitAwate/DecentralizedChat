@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import static chat.backend.Operation.OpType.JOIN_GROUP;
+import static chat.backend.Operation.OpType.SEND_MSG;
 
 public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBackend, PaxosParticipant {
 
@@ -57,8 +58,19 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     }
 
     @Override
-    public void sendMessage(String message, String groupName) {
+    public boolean sendMessage(String message, String groupName) {
+        if (!groups.containsKey(groupName)) {
+            return false;
+        }
 
+        PaxosProposal proposal = new PaxosProposal(new Operation<>(SEND_MSG, groupName, message));
+        Group group = groups.get(groupName);
+        try {
+            Result result = paxosEngine.run(proposal, group);
+            return result.success;
+        } catch (NotBoundException | RemoteException e) {
+            return false;
+        }
     }
 
     @Override
@@ -182,6 +194,7 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
                 addToGroup(peer, operation.groupName);
                 return Result.success("Added new peer to group");
             case SEND_MSG:
+                // TODO: Show message in UI somehow
             case SYNC_UP:
             default:
                 return Result.failure("Unknown operation: " + operation.type);
