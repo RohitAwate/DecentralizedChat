@@ -57,8 +57,8 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     }
 
     @Override
-    public void sendMessage(String message, String groupName) {
-
+    public boolean sendMessage(String message, String groupName) {
+        return true;
     }
 
     @Override

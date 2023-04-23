@@ -13,4 +13,17 @@ public class Group {
         this.peers = new ArrayList<>();
         this.history = new ArrayList<>();
     }
+
+    public void addMessageToGroupHistory(Message message) {
+        history.add(message);
+    }
+
+    public List<Message> getMessageHistory() {
+        return history;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }
