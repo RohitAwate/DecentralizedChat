@@ -70,6 +70,17 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     }
 
     @Override
+    public void shutdown() {
+        try {
+            Naming.unbind(String.format("rmi://localhost:%d/DistributedChatPeer", address.getPort()));
+            Logger.logInfo(String.format("Chat engine shut down on port %s", address));
+        } catch (RemoteException | NotBoundException | MalformedURLException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    @Override
     public boolean sendMessage(String contents, Group group) {
         Message message = new Message(this, contents, System.nanoTime());
         PaxosProposal proposal = new PaxosProposal(new Operation<>(SEND_MSG, group.name, message));
