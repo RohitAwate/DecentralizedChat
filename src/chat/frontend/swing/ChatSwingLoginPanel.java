@@ -1,5 +1,6 @@
 package chat.frontend.swing;
 
+<<<<<<< Updated upstream
 import chat.backend.ChatBackend;
 import chat.backend.MockChatEngine;
 
@@ -7,6 +8,13 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+=======
+import chat.backend.ChatEngine;
+import chat.logging.Logger;
+
+import javax.swing.*;
+import java.awt.*;
+>>>>>>> Stashed changes
 import java.net.MalformedURLException;
 import java.rmi.RemoteException;
 
@@ -19,6 +27,7 @@ import static javax.swing.JOptionPane.showMessageDialog;
  */
 public class ChatSwingLoginPanel extends JPanel {
 
+<<<<<<< Updated upstream
 	private MockChatEngine mockChatEngine;
 	private final ChatSwingMain parent;
 
@@ -104,5 +113,70 @@ public class ChatSwingLoginPanel extends JPanel {
 		group_name.setEnabled(!isLoggedIn);
 		connect.setEnabled(!isLoggedIn);
 		disconnect.setEnabled(isLoggedIn);
+=======
+	private final ChatSwingMain parent;
+	private final ChatSwingSession session;
+	private final JTextFieldHinted nameTextField;
+	private final JTextFieldHinted portTextField;
+	private final JButton sessionButton;
+
+	ChatSwingLoginPanel(ChatSwingMain parent, ChatSwingSession session)
+			throws MalformedURLException, IllegalArgumentException, RemoteException {
+		this.parent = parent;
+		this.session = session;
+		setMaximumSize(new Dimension(300, 50));
+		setLayout(new FlowLayout(FlowLayout.LEADING));
+
+		nameTextField = new JTextFieldHinted("Enter name");
+		nameTextField.setPreferredSize(new Dimension(100, 25));
+		add(nameTextField);
+
+		portTextField = new JTextFieldHinted("Enter port");
+		portTextField.setPreferredSize(new Dimension(75, 25));
+		add(portTextField);
+
+		sessionButton = new JButton("Login");
+		sessionButton.setPreferredSize(new Dimension(75, 25));
+		sessionButton.addActionListener(actionEvent -> {
+			try {
+				sessionEnabler();
+			} catch (Exception e) {
+				showMessageDialog(null, e.getMessage());
+			}
+		});
+		add(sessionButton);
+	}
+
+	private void sessionEnabler() throws MalformedURLException, IllegalArgumentException, RemoteException {
+		if (!session.isLoggedIn()) {
+			String displayName = nameTextField.getText();
+			if (displayName == null || displayName.isEmpty()) {
+				throw new IllegalArgumentException("Empty name!");
+			}
+			int selfPort;
+			try {
+				selfPort = Integer.parseInt(portTextField.getText());
+			} catch (NumberFormatException e) {
+				throw new IllegalArgumentException("Invalid port number!");
+			}
+			Logger.setOwner(displayName, selfPort);
+			session.setChatEngine(new ChatEngine(displayName, selfPort));
+		} else {
+			session.setChatEngine(null);
+			nameTextField.reset();
+			portTextField.reset();
+		}
+		parent.refreshUI();
+	}
+
+	protected void refreshUI() {
+		nameTextField.setEnabled(!session.isLoggedIn());
+		portTextField.setEnabled(!session.isLoggedIn());
+		if (session.isLoggedIn()) {
+			sessionButton.setText("Logout");
+		} else {
+			sessionButton.setText("Login");
+		}
+>>>>>>> Stashed changes
 	}
 }

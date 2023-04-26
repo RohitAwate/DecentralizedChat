@@ -18,14 +18,25 @@ public class JTextFieldHinted extends JTextField implements FocusListener {
 
 	@Override
 	public void focusGained(FocusEvent e) {
+<<<<<<< Updated upstream
 		if(this.getText().isEmpty()) {
+=======
+		if (this.getText().isEmpty()) {
+>>>>>>> Stashed changes
 			super.setText("");
 			showingHint = false;
 		}
 	}
+<<<<<<< Updated upstream
 	@Override
 	public void focusLost(FocusEvent e) {
 		if(this.getText().isEmpty()) {
+=======
+
+	@Override
+	public void focusLost(FocusEvent e) {
+		if (this.getText().isEmpty()) {
+>>>>>>> Stashed changes
 			super.setText(hint);
 			showingHint = true;
 		}
