@@ -59,6 +59,10 @@ public class PaxosEngine {
                 PaxosStage.LEARN
         };
 
+        if (participants.isEmpty()) {
+            return Result.success("No participants in the group yet");
+        }
+
         List<PaxosResponse> responses = null;
         for (PaxosStage stage : stages) {
             responses = this.dispatch(paxosProposal, stage, participants);
@@ -195,6 +199,7 @@ public class PaxosEngine {
                 Future<PaxosResponse> future = service.take();
                 responses.add(future.get(1, TimeUnit.SECONDS));
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                e.printStackTrace();
                 Logger.logError(String.format("Paxos %s: Participant timed out", stage));
             }
         }
@@ -212,6 +217,7 @@ public class PaxosEngine {
                 PaxosParticipant participant = (PaxosParticipant) Naming.lookup(url);
                 participants.add(participant);
             } catch (MalformedURLException e) {
+                e.printStackTrace();
                 Logger.logError(e.getMessage());
             }
         }

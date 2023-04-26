@@ -9,7 +9,6 @@ import java.net.MalformedURLException;
 import java.rmi.RemoteException;
 import java.text.Format;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -22,94 +21,94 @@ import static javax.swing.JOptionPane.showMessageDialog;
 
 public class ChatSwingReceivingPanel extends JPanel {
 
-	private final ChatSwingMain parent;
-	private final JList<Group> groupJList;
-	private final ChatSwingSession session;
-	private final JScrollPane groupListJScrollPane;
-	private final JTextArea groupMessagesJTextArea;
+    private final ChatSwingMain parent;
+    private final JList<Group> groupJList;
+    private final ChatSwingSession session;
+    private final JScrollPane groupListJScrollPane;
+    private final JTextArea groupMessagesJTextArea;
 
-	ChatSwingReceivingPanel(ChatSwingMain parent, ChatSwingSession session)
-			throws MalformedURLException, IllegalArgumentException, RemoteException, ExecutionException, InterruptedException {
-		this.parent = parent;
-		this.session = session;
-		setMaximumSize(new Dimension(600, 400));
-		setLayout(new FlowLayout(FlowLayout.CENTER));
+    ChatSwingReceivingPanel(ChatSwingMain parent, ChatSwingSession session)
+            throws MalformedURLException, IllegalArgumentException, RemoteException, ExecutionException, InterruptedException {
+        this.parent = parent;
+        this.session = session;
+        setMaximumSize(new Dimension(600, 400));
+        setLayout(new FlowLayout(FlowLayout.CENTER));
 
-		groupJList = new JList<>();
-		groupJList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		groupJList.setLayoutOrientation(JList.VERTICAL);
-		groupJList.setVisibleRowCount(-1);
-		groupJList.addListSelectionListener(listSelectionEvent -> {
-			if (!listSelectionEvent.getValueIsAdjusting()) {
-				session.setCurrentlyActiveGroup(groupJList.getSelectedValue());
-			}
-		});
+        groupJList = new JList<>();
+        groupJList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        groupJList.setLayoutOrientation(JList.VERTICAL);
+        groupJList.setVisibleRowCount(-1);
+        groupJList.addListSelectionListener(listSelectionEvent -> {
+            if (!listSelectionEvent.getValueIsAdjusting()) {
+                session.setCurrentlyActiveGroup(groupJList.getSelectedValue());
+            }
+        });
 
-		groupListJScrollPane = new JScrollPane(groupJList);
-		groupListJScrollPane.setPreferredSize(new Dimension(175, 400));
-		groupListJScrollPane.setEnabled(false);
-		add(groupListJScrollPane);
+        groupListJScrollPane = new JScrollPane(groupJList);
+        groupListJScrollPane.setPreferredSize(new Dimension(175, 400));
+        groupListJScrollPane.setEnabled(false);
+        add(groupListJScrollPane);
 
-		groupMessagesJTextArea = new JTextArea();
-		groupMessagesJTextArea.setPreferredSize(new Dimension(375, 400));
-		groupMessagesJTextArea.setEditable(false);
-		groupMessagesJTextArea.setEnabled(false);
-		add(groupMessagesJTextArea);
+        groupMessagesJTextArea = new JTextArea();
+        groupMessagesJTextArea.setPreferredSize(new Dimension(375, 400));
+        groupMessagesJTextArea.setEditable(false);
+        groupMessagesJTextArea.setEnabled(false);
+        add(groupMessagesJTextArea);
 
-		new ChatSwingWorkerViewUpdate(Executors.newScheduledThreadPool(1)).schedule();
-	}
+        new ChatSwingWorkerViewUpdate(Executors.newScheduledThreadPool(1)).schedule();
+    }
 
-	protected void refreshUI()
-			throws MalformedURLException, IllegalArgumentException, RemoteException {
-		if (!session.isLoggedIn()) {
-			groupJList.clearSelection();
-			groupMessagesJTextArea.setText(null);
-		} else {
-			if (groupJList.getModel().getSize() != session.getGroups().size()) {
-				groupJList.setListData(session.getGroups().toArray(new Group[0]));
-			}
-		}
-		groupJList.setEnabled(session.isLoggedIn());
-		groupListJScrollPane.setEnabled(session.isLoggedIn());
-		groupMessagesJTextArea.setEnabled(session.isLoggedIn());
-	}
+    protected void refreshUI()
+            throws MalformedURLException, IllegalArgumentException, RemoteException {
+        if (!session.isLoggedIn()) {
+            groupJList.clearSelection();
+            groupMessagesJTextArea.setText(null);
+        } else {
+            if (groupJList.getModel().getSize() != session.getGroups().size()) {
+                groupJList.setListData(session.getGroups().toArray(new Group[0]));
+            }
+        }
+        groupJList.setEnabled(session.isLoggedIn());
+        groupListJScrollPane.setEnabled(session.isLoggedIn());
+        groupMessagesJTextArea.setEnabled(session.isLoggedIn());
+    }
 
-	private class ChatSwingWorkerViewUpdate extends SwingWorker<List<Message>, Message> {
+    private class ChatSwingWorkerViewUpdate extends SwingWorker<List<Message>, Message> {
 
-		private final ScheduledExecutorService service;
+        private final ScheduledExecutorService service;
 
-		private ChatSwingWorkerViewUpdate(ScheduledExecutorService service) {
-			this.service = service;
-		}
+        private ChatSwingWorkerViewUpdate(ScheduledExecutorService service) {
+            this.service = service;
+        }
 
-		public void schedule() {
-			service.schedule(new ChatSwingWorkerViewUpdate(service), 100, TimeUnit.MILLISECONDS);
-		}
+        public void schedule() {
+            service.schedule(new ChatSwingWorkerViewUpdate(service), 100, TimeUnit.MILLISECONDS);
+        }
 
-		@Override
-		protected List<Message> doInBackground() {
-			schedule();
-			if (session.isLoggedIn() && session.ifAnyGroupActive()) {
-				return session.getCurrentlyActiveGroup().getHistory();
-			}
-			return new ArrayList<>();
-		}
+        @Override
+        protected List<Message> doInBackground() {
+            schedule();
+            if (session.isLoggedIn() && session.ifAnyGroupActive()) {
+                return session.getCurrentlyActiveGroup().getHistory();
+            }
+            return new ArrayList<>();
+        }
 
-		@Override
-		protected void done() {
-			try {
-				groupMessagesJTextArea.setText(null);
-				for (Message m : get()) {
-					Date date = new Date(m.getTimestamp());
-					Format format = new SimpleDateFormat("MM/dd/yyyy, hh:mm:ss aaa");
-					groupMessagesJTextArea.append(String.format("[%s] %s: %s\n",
-							format.format(date), m.getFrom().getDisplayName(), m.getContents()));
-				}
-			} catch (RemoteException e) {
-				showMessageDialog(null, e.getMessage());
-			} catch (ExecutionException | InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		}
-	}
+        @Override
+        protected void done() {
+            try {
+                groupMessagesJTextArea.setText(null);
+                for (Message m : get()) {
+                    Date date = new Date(m.getTimestamp());
+                    Format format = new SimpleDateFormat("MM/dd/yyyy, hh:mm:ss aaa");
+                    groupMessagesJTextArea.append(String.format("[%s] %s: %s\n",
+                            format.format(date), m.getFrom().getDisplayName(), m.getContents()));
+                }
+            } catch (RemoteException e) {
+                showMessageDialog(null, e.getMessage());
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 }

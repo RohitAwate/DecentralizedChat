@@ -70,11 +70,12 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     }
 
     @Override
-    public boolean sendMessage(String message, Group group) {
+    public boolean sendMessage(String contents, Group group) {
+        Message message = new Message(this, contents, System.nanoTime());
         PaxosProposal proposal = new PaxosProposal(new Operation<>(SEND_MSG, group.name, message));
+
         try {
             Result<?> result = paxosEngine.run(proposal, group);
-            // TODO: Add message to UI
             return result.success;
         } catch (NotBoundException | RemoteException e) {
             return false;
@@ -99,16 +100,24 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     @Override
     public Group acceptJoin(String name, ChatPeer peer) throws RemoteException {
         if (!groups.containsKey(name)) {
-            throw new IllegalArgumentException("No such group: " + name);
+            return null;
         }
 
         Group group = groups.get(name);
         PaxosProposal proposal = newProposal(new Operation<>(JOIN_GROUP, name, peer));
 
         try {
-            Result result = paxosEngine.run(proposal, group);
+            Result<?> result = paxosEngine.run(proposal, group);
             if (result.success) {
-                return group;
+                // Create a copy of own peers and send to caller
+                // Add self to the list
+                Group copy = new Group(group);
+                copy.peers.add(this);
+
+                // Now add this peer to your own list
+                group.peers.add(peer);
+
+                return copy;
             }
         } catch (NotBoundException e) {
             // Just return an empty list
@@ -130,19 +139,12 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     // Paxos Stuff
     private long paxosMaxID = System.nanoTime();
     private PaxosProposal accepted;
-    private final double PAXOS_FAILURE_PROBABILITY = 0.1;  // Replica fails 10% of the times
 
     private final PaxosEngine paxosEngine;
 
     @Override
     public PaxosResponse prepare(PaxosProposal paxosProposal) throws RemoteException {
         Logger.logInfo("Paxos Prepare: Received proposal");
-
-        // Simulating a failure
-        if (Math.random() <= PAXOS_FAILURE_PROBABILITY) {
-            Logger.logError("Paxos Prepare: Simulated failure");
-            return null;
-        }
 
         if (paxosProposal.id > this.paxosMaxID) {
             // Update max Paxos ID
@@ -165,11 +167,6 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     public PaxosResponse accept(PaxosProposal paxosProposal) throws RemoteException {
         Logger.logInfo("Paxos Accept: Received proposal for acceptance");
 
-        // Simulating a failure
-        if (Math.random() <= PAXOS_FAILURE_PROBABILITY) {
-            return null;
-        }
-
         if (paxosProposal.id == this.paxosMaxID) {
             this.accepted = paxosProposal;
             Logger.logInfo("Paxos Accept: Accepting proposal");
@@ -184,7 +181,7 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     public PaxosResponse learn(PaxosProposal paxosProposal) throws RemoteException {
         Logger.logInfo("Paxos Learn: Received proposal for learning");
 
-        Result result = this.dispatch(paxosProposal.operation);
+        Result<?> result = this.dispatch(paxosProposal.operation);
         if (result.success) {
             this.accepted = null;
             Logger.logInfo("Paxos Learn: Learned proposal successfully");
@@ -197,19 +194,25 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
 
     private Result<?> dispatch(Operation<?> operation) {
         switch (operation.type) {
-            case JOIN_GROUP:
+            case JOIN_GROUP: {
                 ChatPeer peer = (ChatPeer) operation.payload;
                 addToGroup(peer, operation.groupName);
                 return Result.success("Added new peer to group");
-            case SEND_MSG:
-                // TODO: Show message in UI somehow
-            case SYNC_UP:
+            }
+            case SEND_MSG: {
+                Group group = groups.get(operation.groupName);
+                Message message = (Message) operation.payload;
+                group.addMessageToGroupHistory((Message) operation.payload);
+                return Result.success(message);
+            }
+            case SYNC_UP: {
                 if (groups.containsKey(operation.groupName)) {
                     return Result.failure("Group not found: " + operation.groupName);
                 }
 
                 Group group = groups.get(operation.groupName);
                 return Result.success(group.history);
+            }
             default:
                 return Result.failure("Unknown operation: " + operation.type);
         }
