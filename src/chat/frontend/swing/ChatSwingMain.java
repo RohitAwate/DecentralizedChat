@@ -4,53 +4,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.net.MalformedURLException;
 import java.rmi.RemoteException;
-<<<<<<< Updated upstream
-=======
 import java.util.concurrent.ExecutionException;
->>>>>>> Stashed changes
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
 public class ChatSwingMain extends JFrame {
 
-<<<<<<< Updated upstream
-	private boolean isLoggedIn = false;
-	private final ChatSwingLoginPanel chatSwingLoginPanel;
-	private final ChatSwingReceivingPanel chatSwingReceivingPanel;
-	private final ChatSwingSendingPanel chatSwingSendingPanel;
-
-	ChatSwingMain() throws MalformedURLException, RemoteException, RuntimeException {
-		JFrame frame = new JFrame("Decentralized Chat");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setPreferredSize(new Dimension(600, 500));
-
-		BorderLayout borderLayout = new BorderLayout();
-		JPanel panel = new JPanel(borderLayout);
-
-		chatSwingLoginPanel = new ChatSwingLoginPanel(this);
-		chatSwingReceivingPanel = new ChatSwingReceivingPanel();
-		chatSwingSendingPanel = new ChatSwingSendingPanel();
-
-		panel.add(chatSwingLoginPanel, BorderLayout.PAGE_START);
-		panel.add(chatSwingReceivingPanel, BorderLayout.CENTER);
-		panel.add(chatSwingSendingPanel, BorderLayout.PAGE_END);
-
-		frame.setContentPane(panel);
-		frame.pack();
-		frame.setLocationRelativeTo(null);
-		frame.setVisible(true);
-	}
-
-	protected boolean isLoggedIn() {
-		return isLoggedIn;
-	}
-
-	protected void switchUIEnabledStatus() throws MalformedURLException, RemoteException {
-		isLoggedIn = !isLoggedIn;
-		chatSwingLoginPanel.switchUIEnabledStatus(isLoggedIn);
-		chatSwingReceivingPanel.switchUIEnabledStatus(isLoggedIn);
-		chatSwingSendingPanel.switchUIEnabledStatus(isLoggedIn);
-=======
 	private final ChatSwingLoginPanel chatSwingLoginPanel;
 	private final ChatSwingJoiningPanel chatSwingJoiningPanel;
 	private final ChatSwingReceivingPanel chatSwingReceivingPanel;
@@ -84,7 +43,6 @@ public class ChatSwingMain extends JFrame {
 		setFocusable(true);
 		requestFocus();
 		requestFocusInWindow();
->>>>>>> Stashed changes
 	}
 
 	public static void main(String[] args) {
@@ -92,16 +50,11 @@ public class ChatSwingMain extends JFrame {
 			try {
 				new ChatSwingMain();
 			} catch (Exception e) {
-<<<<<<< Updated upstream
-=======
 				e.printStackTrace();
->>>>>>> Stashed changes
 				showMessageDialog(null, e.getMessage());
 			}
 		});
 	}
-<<<<<<< Updated upstream
-=======
 
 	protected void refreshUI()
 			throws MalformedURLException, IllegalArgumentException, RemoteException {
@@ -110,5 +63,4 @@ public class ChatSwingMain extends JFrame {
 		chatSwingReceivingPanel.refreshUI();
 		chatSwingSendingPanel.refreshUI();
 	}
->>>>>>> Stashed changes
 }

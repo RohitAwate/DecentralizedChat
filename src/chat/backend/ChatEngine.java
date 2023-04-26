@@ -69,12 +69,6 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
 		return true;
 	}
 
-<<<<<<< Updated upstream
-    @Override
-    public boolean sendMessage(String message, String groupName) {
-        return true;
-    }
-=======
 	@Override
 	public List<Group> getGroups() {
 		return new ArrayList<>(groups.values());
@@ -85,7 +79,6 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
 		if (groups.containsKey(name)) {
 			return false;
 		}
->>>>>>> Stashed changes
 
 		groups.put(name, new Group(name));
 		return true;
