@@ -51,7 +51,7 @@ public class PaxosEngine {
      * @param group
      * @return - Result of the process
      */
-    public Result run(PaxosProposal paxosProposal, Group group) throws NotBoundException, RemoteException {
+    public Result<?> run(PaxosProposal paxosProposal, Group group) throws NotBoundException, RemoteException {
         List<PaxosParticipant> participants = connectToPeers(group);
         PaxosStage[] stages = new PaxosStage[]{
                 PaxosStage.PREPARE,

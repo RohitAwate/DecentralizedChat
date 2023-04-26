@@ -13,12 +13,9 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static chat.backend.Operation.OpType.JOIN_GROUP;
-import static chat.backend.Operation.OpType.SEND_MSG;
+import static chat.backend.Operation.OpType.*;
 
 public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBackend, PaxosParticipant {
 
@@ -41,32 +38,43 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     }
 
     @Override
-    public boolean joinGroup(String ip, int port, String groupName) {
+    public Optional<Group> joinGroup(String ip, int port, String groupName) {
         String url = String.format("rmi://%s:%d/DistributedChatPeer", ip, port);
         try {
             ChatPeer peer = (ChatPeer) Naming.lookup(url);
             Group group = peer.acceptJoin(groupName, this);
             if (group == null) {
-                return false;
+                return Optional.empty();
             }
 
             groups.put(groupName, group);
-            return true;
+            return Optional.of(group);
         } catch (NotBoundException | MalformedURLException | RemoteException e) {
-            return false;
+            return Optional.empty();
         }
     }
 
     @Override
-    public boolean sendMessage(String message, String groupName) {
-        if (!groups.containsKey(groupName)) {
+    public boolean syncUp(Group group) {
+        PaxosProposal proposal = new PaxosProposal(new Operation<>(SYNC_UP, group.name, group));
+        try {
+            Result<?> result = paxosEngine.run(proposal, group);
+            // TODO: Show 
+            if (result.success) {
+                return true;
+            }
+        } catch (NotBoundException | RemoteException e) {
             return false;
         }
+        return false;
+    }
 
-        PaxosProposal proposal = new PaxosProposal(new Operation<>(SEND_MSG, groupName, message));
-        Group group = groups.get(groupName);
+    @Override
+    public boolean sendMessage(String message, Group group) {
+        PaxosProposal proposal = new PaxosProposal(new Operation<>(SEND_MSG, group.name, message));
         try {
-            Result result = paxosEngine.run(proposal, group);
+            Result<?> result = paxosEngine.run(proposal, group);
+            // TODO: Add message to UI
             return result.success;
         } catch (NotBoundException | RemoteException e) {
             return false;
@@ -75,7 +83,7 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
 
     @Override
     public List<Group> getGroups() {
-        return null;
+        return new ArrayList<>(groups.values());
     }
 
     @Override
@@ -187,7 +195,7 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
         }
     }
 
-    private Result dispatch(Operation<?> operation) {
+    private Result<?> dispatch(Operation<?> operation) {
         switch (operation.type) {
             case JOIN_GROUP:
                 ChatPeer peer = (ChatPeer) operation.payload;
@@ -196,6 +204,12 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
             case SEND_MSG:
                 // TODO: Show message in UI somehow
             case SYNC_UP:
+                if (groups.containsKey(operation.groupName)) {
+                    return Result.failure("Group not found: " + operation.groupName);
+                }
+
+                Group group = groups.get(operation.groupName);
+                return Result.success(group.history);
             default:
                 return Result.failure("Unknown operation: " + operation.type);
         }
