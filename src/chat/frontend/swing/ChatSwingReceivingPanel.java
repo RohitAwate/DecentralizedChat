@@ -17,8 +17,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static javax.swing.JOptionPane.showMessageDialog;
-
 public class ChatSwingReceivingPanel extends JPanel {
 
     private final ChatSwingMain parent;
@@ -97,17 +95,17 @@ public class ChatSwingReceivingPanel extends JPanel {
         @Override
         protected void done() {
             try {
-                groupMessagesJTextArea.setText(null);
-                for (Message m : get()) {
-                    Date date = new Date(m.getTimestamp());
-                    Format format = new SimpleDateFormat("MM/dd/yyyy, hh:mm:ss aaa");
-                    groupMessagesJTextArea.append(String.format("[%s] %s: %s\n",
-                            format.format(date), m.getFrom().getDisplayName(), m.getContents()));
+                if (groupMessagesJTextArea != null && session.isLoggedIn() && session.ifAnyGroupActive()) {
+                    groupMessagesJTextArea.setText(null);
+                    for (Message m : get()) {
+                        Date date = new Date(m.getTimestamp());
+                        Format format = new SimpleDateFormat("MM/dd/yyyy, hh:mm:ss aaa");
+                        groupMessagesJTextArea.append(String.format("[%s] %s: %s\n",
+                                format.format(date), m.getFrom().getDisplayName(), m.getContents()));
+                    }
                 }
-            } catch (RemoteException e) {
-                showMessageDialog(null, e.getMessage());
-            } catch (ExecutionException | InterruptedException e) {
-                throw new RuntimeException(e);
+            } catch (ExecutionException | InterruptedException | RemoteException e) {
+                e.printStackTrace();
             }
         }
     }

@@ -6,6 +6,7 @@ import chat.logging.Logger;
 import javax.swing.*;
 import java.awt.*;
 import java.net.MalformedURLException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
 import static javax.swing.JOptionPane.showMessageDialog;
@@ -50,7 +51,8 @@ public class ChatSwingLoginPanel extends JPanel {
 		add(sessionButton);
 	}
 
-	private void sessionEnabler() throws MalformedURLException, IllegalArgumentException, RemoteException {
+	private void sessionEnabler()
+			throws MalformedURLException, NotBoundException, IllegalArgumentException, RemoteException {
 		if (!session.isLoggedIn()) {
 			String displayName = nameTextField.getText();
 			if (displayName == null || displayName.isEmpty()) {
@@ -65,7 +67,7 @@ public class ChatSwingLoginPanel extends JPanel {
 			Logger.setOwner(displayName, selfPort);
 			session.setChatEngine(new ChatEngine(displayName, selfPort));
 		} else {
-			session.setChatEngine(null);
+			session.purge();
 			nameTextField.reset();
 			portTextField.reset();
 		}

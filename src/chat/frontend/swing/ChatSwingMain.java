@@ -2,6 +2,8 @@ package chat.frontend.swing;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.net.MalformedURLException;
 import java.rmi.RemoteException;
 import java.util.concurrent.ExecutionException;
