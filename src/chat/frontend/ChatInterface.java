@@ -97,9 +97,9 @@ public class ChatInterface {
 		int port = Integer.parseInt(args[2]);
 		String groupName = args[3];
 
-		if (backend.joinGroup(ip, port, groupName)) {
-
-		}
+//		if (backend.joinGroup(ip, port, groupName)) {
+//
+//		}
 	}
 
 	private void createGroupHandler(String[] tokens) {

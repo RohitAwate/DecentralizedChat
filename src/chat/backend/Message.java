@@ -1,6 +1,8 @@
 package chat.backend;
 
-public class Message {
+import java.io.Serializable;
+
+public class Message implements Serializable {
 	final ChatPeer from;
 	final String contents;
 

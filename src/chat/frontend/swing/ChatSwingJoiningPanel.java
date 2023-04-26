@@ -1,9 +1,12 @@
 package chat.frontend.swing;
 
+import chat.backend.Group;
+
 import javax.swing.*;
 import java.awt.*;
 import java.net.MalformedURLException;
 import java.rmi.RemoteException;
+import java.util.Optional;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
@@ -58,7 +61,9 @@ public class ChatSwingJoiningPanel extends JPanel {
 	private void joinGroup(int port, String groupName)
 			throws MalformedURLException, IllegalArgumentException, RemoteException {
 		if (groupName != null && !groupName.isEmpty() && session.isLoggedIn()) {
-			if (session.getChatEngine().joinGroup("localhost", port, groupName)) {
+			Optional<Group> group = session.getChatEngine().joinGroup("localhost", port, groupName);
+			if (group.isPresent()) {
+				session.setCurrentlyActiveGroup(group.get());
 				showMessageDialog(null, String.format("Joined group %s at port %d!", groupName, port));
 			} else {
 				session.getChatEngine().createGroup(groupName);

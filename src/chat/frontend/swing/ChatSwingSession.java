@@ -4,6 +4,8 @@ import chat.backend.ChatEngine;
 import chat.backend.Group;
 import org.jetbrains.annotations.Nullable;
 
+import java.rmi.NoSuchObjectException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,5 +50,10 @@ public class ChatSwingSession {
 
 	public void setCurrentlyActiveGroup(@Nullable Group currentlyActiveGroup) {
 		this.currentlyActiveGroup = currentlyActiveGroup;
+	}
+
+	public void purge() {
+		currentlyActiveGroup = null;
+		chatEngine = null;
 	}
 }

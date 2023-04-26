@@ -43,7 +43,7 @@ public class ChatSwingSendingPanel extends JPanel {
 					}
 					session.getCurrentlyActiveGroup()
 							.addMessageToGroupHistory(new Message(session.getChatEngine(), message, System.currentTimeMillis()));
-					session.getChatEngine().sendMessage(message, session.getCurrentlyActiveGroup().getName());
+					session.getChatEngine().sendMessage(message, session.getCurrentlyActiveGroup());
 				}
 				parent.refreshUI();
 			} catch (Exception e) {
