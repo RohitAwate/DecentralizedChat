@@ -9,7 +9,9 @@ import chat.logging.Logger;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
-import java.nio.file.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -25,27 +27,54 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     private final String displayName;
     private final Map<String, Group> groups;
 
+    // This is an additional data field that stores the addresses
+    // of peers from groups. This storage is local, and thus we don't
+    // need to call getAddress() on peers using RMI. This is helpful
+    // while storing state and some peers may be offline.
+    private final Map<String, List<InetSocketAddress>> peerAddresses;
+
     public ChatEngine(String displayName, int port) throws RemoteException, MalformedURLException {
         super();
 
-        this.displayName = displayName;
-
         Map<String, Group> tempGroups;
-        try (FileInputStream file = new FileInputStream(String.format("%s-%s.dat", displayName, port))) {
+        String fileName = String.format("app_data/%s-%d/groups.dat", displayName, port);
+        try (FileInputStream file = new FileInputStream(fileName)) {
             ObjectInputStream stream = new ObjectInputStream(file);
             tempGroups = (Map<String, Group>) stream.readObject();
         } catch (IOException | ClassNotFoundException e) {
             tempGroups = new HashMap<>();
         }
 
+        this.displayName = displayName;
+        this.address = new InetSocketAddress("localhost", port);
         this.groups = tempGroups;
-        address = new InetSocketAddress("localhost", port);
+
+        Map<String, List<InetSocketAddress>> tempPeers;
+        fileName = String.format("app_data/%s-%d/peers.dat", displayName, port);
+        try (FileInputStream file = new FileInputStream(fileName)) {
+            ObjectInputStream stream = new ObjectInputStream(file);
+            tempPeers = (Map<String, List<InetSocketAddress>>) stream.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            tempPeers = new HashMap<>();
+        }
+        this.peerAddresses = tempPeers;
+
+        for (Map.Entry<String, List<InetSocketAddress>> entry : this.peerAddresses.entrySet()) {
+            for (InetSocketAddress address : entry.getValue()) {
+                String url = String.format("rmi://%s:%d/DistributedChatPeer", ip, port);
+                try {
+                    ChatPeer peer = (ChatPeer) Naming.lookup(url);
+                } catch (NotBoundException | MalformedURLException | RemoteException e) {
+
+                }
+            }
+        }
 
         LocateRegistry.createRegistry(port);
         Naming.rebind(String.format("rmi://localhost:%d/DistributedChatPeer", port), this);
         Logger.logInfo(String.format("Chat engine start on port %s", address));
 
-        paxosEngine = new PaxosEngine();
+        this.paxosEngine = new PaxosEngine();
     }
 
     @Override
@@ -59,10 +88,31 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
             }
 
             groups.put(groupName, group);
+            if (!peerAddresses.containsKey(group.name)) {
+                peerAddresses.put(group.name, new ArrayList<>());
+            }
+
+            peerAddresses.get(group.name).add(peer.getAddress());
+
             return Optional.of(group);
         } catch (NotBoundException | MalformedURLException | RemoteException e) {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public Optional<Group> syncUp(String groupName) {
+        Group group = groups.get(groupName);
+        PaxosProposal proposal = new PaxosProposal(new Operation<>(SYNC_UP, groupName, group));
+        try {
+            Result<?> result = paxosEngine.run(proposal, group);
+            if (result.success) {
+                return Optional.of((Group) result.payload);
+            }
+        } catch (NotBoundException | RemoteException e) {
+            return Optional.empty();
+        }
+        return Optional.empty();
     }
 
     @Override
@@ -77,9 +127,18 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
             }
         }
 
-        try (FileOutputStream file = new FileOutputStream(String.format("%s-%s.dat", displayName, address.getPort()))) {
+        String fileName = String.format("app_data/%s-%d/groups.dat", displayName, address.getPort());
+        try (FileOutputStream file = new FileOutputStream(fileName)) {
             ObjectOutputStream stream = new ObjectOutputStream(file);
             stream.writeObject(groups);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        fileName = String.format("app_data/%s-%d/peers.dat", displayName, address.getPort());
+        try (FileOutputStream file = new FileOutputStream(fileName)) {
+            ObjectOutputStream stream = new ObjectOutputStream(file);
+            stream.writeObject(peerAddresses);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -166,6 +225,11 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
 
                 // Now add this peer to your own list
                 group.peers.add(peer);
+                if (!peerAddresses.containsKey(group.name)) {
+                    peerAddresses.put(group.name, new ArrayList<>());
+                }
+
+                peerAddresses.get(group.name).add(peer.getAddress());
 
                 return copy;
             }
@@ -246,8 +310,13 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
         switch (operation.type) {
             case JOIN_GROUP: {
                 ChatPeer peer = (ChatPeer) operation.payload;
-                addToGroup(peer, operation.groupName);
-                return Result.success("Added new peer to group");
+
+                try {
+                    addToGroup(peer, operation.groupName);
+                    return Result.success("Added new peer to group");
+                } catch (IOException e) {
+                    return Result.failure("Could not add to group");
+                }
             }
             case SEND_MSG: {
                 Group group = groups.get(operation.groupName);
@@ -270,11 +339,23 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
 
                 return Result.success("Logged off successfully!");
             }
+            case SYNC_UP: {
+                if (groups.containsKey(operation.groupName)) {
+                    return Result.failure("Group not found: " + operation.groupName);
+                }
+
+                Group group = groups.get(operation.groupName);
+                return Result.success(group);
+            }
             case SEND_FILE: {
                 Group group = groups.get(operation.groupName);
                 FileTransferHandle handle = (FileTransferHandle) operation.payload;
+
+                String fileName = String.format("app_data/%s-%d/received_files/%s", displayName, address.getPort(), handle.path);
+                Path destinationPath = FileSystems.getDefault().getPath(fileName);
+
                 try {
-                    Path destinationPath = FileSystems.getDefault().getPath(handle.path);
+                    Files.createDirectories(destinationPath.getParent());
                     Files.write(destinationPath, handle.bytes);
                     group.addMessageToGroupHistory(
                             new Message(handle.from,
@@ -291,9 +372,15 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
         }
     }
 
-    private void addToGroup(ChatPeer peer, String groupName) {
+    private void addToGroup(ChatPeer peer, String groupName) throws RemoteException {
         Group group = groups.get(groupName);
         group.peers.add(peer);
+
+        if (!peerAddresses.containsKey(group.name)) {
+            peerAddresses.put(group.name, new ArrayList<>());
+        }
+
+        peerAddresses.get(groupName).add(peer.getAddress());
     }
 
     /**

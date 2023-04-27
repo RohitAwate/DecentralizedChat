@@ -14,6 +14,8 @@ public interface ChatBackend {
 
     List<Group> getGroups();
 
+    Optional<Group> syncUp(String groupName);
+
     boolean createGroup(String name);
 
     void shutdown();

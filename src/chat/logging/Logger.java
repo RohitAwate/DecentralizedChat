@@ -3,7 +3,9 @@ package chat.logging;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 
@@ -17,10 +19,12 @@ public class Logger {
 	private static PrintStream logStream = null;
 
 	public static void setOwner(String displayName, int port) {
-		String fileName = String.format("%s%d.log", displayName, port);
+		String fileName = String.format("app_data/%s-%d/logs.txt", displayName, port);
+		Path path = FileSystems.getDefault().getPath(fileName);
 		try {
+			Files.createDirectories(path.getParent());
 			logStream = new PrintStream(new BufferedOutputStream(
-					Files.newOutputStream(Paths.get(fileName), CREATE, APPEND)
+					Files.newOutputStream(path, CREATE, APPEND)
 			));
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -51,6 +55,7 @@ public class Logger {
 	// Helper method
 	private static void log(String msg, String level) {
 		String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS").format(new java.util.Date());
-		logStream.printf("%s: %s\n", timeStamp, msg);
+		logStream.printf("[%s] %s: %s\n", level, timeStamp, msg);
+		logStream.flush();
 	}
 }
