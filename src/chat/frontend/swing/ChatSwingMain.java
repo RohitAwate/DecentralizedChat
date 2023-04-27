@@ -49,7 +49,10 @@ public class ChatSwingMain extends JFrame {
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
-				session.getChatEngine().shutdown();
+				if (session.isLoggedIn()) {
+					session.getChatEngine().shutdown();
+				}
+				System.exit(0);
 			}
 		});
 	}

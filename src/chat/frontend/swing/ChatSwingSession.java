@@ -4,8 +4,6 @@ import chat.backend.ChatEngine;
 import chat.backend.Group;
 import org.jetbrains.annotations.Nullable;
 
-import java.rmi.NoSuchObjectException;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 import java.util.UUID;
 
