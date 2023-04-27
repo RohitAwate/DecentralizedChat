@@ -6,8 +6,12 @@ import chat.backend.paxos.PaxosProposal;
 import chat.backend.paxos.PaxosResponse;
 import chat.logging.Logger;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.nio.file.*;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -55,21 +59,6 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     }
 
     @Override
-    public boolean syncUp(Group group) {
-        PaxosProposal proposal = new PaxosProposal(new Operation<>(SYNC_UP, group.name, group));
-        try {
-            Result<?> result = paxosEngine.run(proposal, group);
-            // TODO: Show 
-            if (result.success) {
-                return true;
-            }
-        } catch (NotBoundException | RemoteException e) {
-            return false;
-        }
-        return false;
-    }
-
-    @Override
     public void shutdown() {
         for (Group group : groups.values()) {
             PaxosProposal proposal = new PaxosProposal(new Operation<>(LOG_OFF, group.name, this));
@@ -92,8 +81,34 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
 
     @Override
     public boolean sendMessage(String contents, Group group) {
-        Message message = new Message(this.getDisplayName(), contents, System.nanoTime());
+        Message message = new Message(this.getDisplayName(), contents, System.currentTimeMillis());
         PaxosProposal proposal = new PaxosProposal(new Operation<>(SEND_MSG, group.name, message));
+
+        try {
+            Result<?> result = paxosEngine.run(proposal, group);
+            return result.success;
+        } catch (NotBoundException | RemoteException e) {
+            return false;
+        }
+    }
+
+    private static class FileTransferHandle implements Serializable {
+        final String from;
+        final String path;
+        final byte[] bytes;
+
+        public FileTransferHandle(String from, String path, byte[] bytes) {
+            this.from = from;
+            this.path = path;
+            this.bytes = bytes;
+        }
+    }
+
+    @Override
+    public boolean sendFile(File file, Group group) throws IOException {
+        byte[] fileBytes = Files.readAllBytes(file.getAbsoluteFile().toPath());
+        FileTransferHandle handle = new FileTransferHandle(displayName, file.getName(), fileBytes);
+        PaxosProposal proposal = new PaxosProposal(new Operation<>(SEND_FILE, group.name, handle));
 
         try {
             Result<?> result = paxosEngine.run(proposal, group);
@@ -158,7 +173,7 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     }
 
     // Paxos Stuff
-    private long paxosMaxID = System.nanoTime();
+    private long paxosMaxID = System.currentTimeMillis();
     private PaxosProposal accepted;
 
     private final PaxosEngine paxosEngine;
@@ -226,14 +241,6 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
                 group.addMessageToGroupHistory((Message) operation.payload);
                 return Result.success(message);
             }
-            case SYNC_UP: {
-                if (groups.containsKey(operation.groupName)) {
-                    return Result.failure("Group not found: " + operation.groupName);
-                }
-
-                Group group = groups.get(operation.groupName);
-                return Result.success(group.history);
-            }
             case LOG_OFF: {
                 Group group = groups.get(operation.groupName);
                 ChatPeer peer = (ChatPeer) operation.payload;
@@ -248,6 +255,22 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
                 });
 
                 return Result.success("Logged off successfully!");
+            }
+            case SEND_FILE: {
+                Group group = groups.get(operation.groupName);
+                FileTransferHandle handle = (FileTransferHandle) operation.payload;
+                try {
+                    Path destinationPath = FileSystems.getDefault().getPath(handle.path);
+                    Files.write(destinationPath, handle.bytes);
+                    group.addMessageToGroupHistory(
+                            new Message(handle.from,
+                                    "Sent file: " + handle.path,
+                                    System.currentTimeMillis())
+                    );
+                    return Result.success("File saved successfully!");
+                } catch (IOException e) {
+                    return Result.failure("File could not be saved");
+                }
             }
             default:
                 return Result.failure("Unknown operation: " + operation.type);

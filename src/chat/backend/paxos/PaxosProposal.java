@@ -25,7 +25,7 @@ public class PaxosProposal implements Serializable {
 	 * @param operation the operation to be proposed
 	 */
 	public PaxosProposal(Operation<?> operation) {
-		this.id = System.nanoTime();
+		this.id = System.currentTimeMillis();
 		this.operation = operation;
 	}
 
