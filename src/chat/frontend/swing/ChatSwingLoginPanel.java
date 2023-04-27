@@ -70,6 +70,8 @@ public class ChatSwingLoginPanel extends JPanel {
 			session.purge();
 			nameTextField.reset();
 			portTextField.reset();
+			System.gc();
+			System.exit(0);
 		}
 		parent.refreshUI();
 	}

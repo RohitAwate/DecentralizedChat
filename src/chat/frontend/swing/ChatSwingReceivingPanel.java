@@ -101,10 +101,10 @@ public class ChatSwingReceivingPanel extends JPanel {
                         Date date = new Date(m.getTimestamp());
                         Format format = new SimpleDateFormat("MM/dd/yyyy, hh:mm:ss aaa");
                         groupMessagesJTextArea.append(String.format("[%s] %s: %s\n",
-                                format.format(date), m.getFrom().getDisplayName(), m.getContents()));
+                                format.format(date), m.getFrom(), m.getContents()));
                     }
                 }
-            } catch (ExecutionException | InterruptedException | RemoteException e) {
+            } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
             }
         }

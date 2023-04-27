@@ -13,4 +13,6 @@ public interface ChatBackend {
     boolean createGroup(String name);
 
     boolean syncUp(Group group);
+
+    void shutdown();
 }
