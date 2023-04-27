@@ -71,6 +71,16 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
 
     @Override
     public void shutdown() {
+        for (Group group : groups.values()) {
+            PaxosProposal proposal = new PaxosProposal(new Operation<>(LOG_OFF, group.name, this));
+
+            try {
+                paxosEngine.run(proposal, group);
+            } catch (NotBoundException | RemoteException e) {
+                return;
+            }
+        }
+
         try {
             Naming.unbind(String.format("rmi://localhost:%d/DistributedChatPeer", address.getPort()));
             Logger.logInfo(String.format("Chat engine shut down on port %s", address));
@@ -223,6 +233,21 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
 
                 Group group = groups.get(operation.groupName);
                 return Result.success(group.history);
+            }
+            case LOG_OFF: {
+                Group group = groups.get(operation.groupName);
+                ChatPeer peer = (ChatPeer) operation.payload;
+
+                group.peers.removeIf(cp -> {
+                    try {
+                        return cp.getAddress().equals(peer.getAddress());
+                    } catch (RemoteException e) {
+                        Logger.logInfo("Could not log off peer.");
+                        return false;
+                    }
+                });
+
+                return Result.success("Logged off successfully!");
             }
             default:
                 return Result.failure("Unknown operation: " + operation.type);

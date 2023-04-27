@@ -43,6 +43,6 @@ public class Operation<T> implements Serializable {
 	 * The type of the operation.
 	 */
 	public enum OpType {
-		JOIN_GROUP, SEND_MSG, SYNC_UP
+		JOIN_GROUP, SEND_MSG, SYNC_UP, LOG_OFF
 	}
 }
