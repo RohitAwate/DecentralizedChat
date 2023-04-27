@@ -6,9 +6,7 @@ import chat.backend.paxos.PaxosProposal;
 import chat.backend.paxos.PaxosResponse;
 import chat.logging.Logger;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.nio.file.*;
@@ -31,7 +29,16 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
         super();
 
         this.displayName = displayName;
-        this.groups = new HashMap<>();  // TODO: Persist this and load on startup
+
+        Map<String, Group> tempGroups;
+        try (FileInputStream file = new FileInputStream(String.format("%s-%s.dat", displayName, port))) {
+            ObjectInputStream stream = new ObjectInputStream(file);
+            tempGroups = (Map<String, Group>) stream.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            tempGroups = new HashMap<>();
+        }
+
+        this.groups = tempGroups;
         address = new InetSocketAddress("localhost", port);
 
         LocateRegistry.createRegistry(port);
@@ -68,6 +75,13 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
             } catch (NotBoundException | RemoteException e) {
                 return;
             }
+        }
+
+        try (FileOutputStream file = new FileOutputStream(String.format("%s-%s.dat", displayName, address.getPort()))) {
+            ObjectOutputStream stream = new ObjectOutputStream(file);
+            stream.writeObject(groups);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         try {
