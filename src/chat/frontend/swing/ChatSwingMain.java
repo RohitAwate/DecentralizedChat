@@ -45,6 +45,13 @@ public class ChatSwingMain extends JFrame {
 		setFocusable(true);
 		requestFocus();
 		requestFocusInWindow();
+
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				session.getChatEngine().shutdown();
+			}
+		});
 	}
 
 	public static void main(String[] args) {

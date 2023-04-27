@@ -82,7 +82,7 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
 
     @Override
     public boolean sendMessage(String contents, Group group) {
-        Message message = new Message(this, contents, System.nanoTime());
+        Message message = new Message(this.getDisplayName(), contents, System.nanoTime());
         PaxosProposal proposal = new PaxosProposal(new Operation<>(SEND_MSG, group.name, message));
 
         try {

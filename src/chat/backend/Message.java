@@ -3,18 +3,18 @@ package chat.backend;
 import java.io.Serializable;
 
 public class Message implements Serializable {
-	final ChatPeer from;
+	final String from;
 	final String contents;
 
 	final long timestamp;
 
-	public Message(ChatPeer from, String contents, long timestamp) {
+	public Message(String from, String contents, long timestamp) {
 		this.from = from;
 		this.contents = contents;
 		this.timestamp = timestamp;
 	}
 
-	public ChatPeer getFrom() {
+	public String getFrom() {
 		return from;
 	}
 

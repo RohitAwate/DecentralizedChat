@@ -42,7 +42,7 @@ public class ChatSwingSendingPanel extends JPanel {
 						throw new IllegalArgumentException("Please select a group first!");
 					}
 					session.getCurrentlyActiveGroup()
-							.addMessageToGroupHistory(new Message(session.getChatEngine(), message, System.currentTimeMillis()));
+							.addMessageToGroupHistory(new Message(session.getChatEngine().getDisplayName(), message, System.currentTimeMillis()));
 					session.getChatEngine().sendMessage(message, session.getCurrentlyActiveGroup());
 				}
 				parent.refreshUI();
