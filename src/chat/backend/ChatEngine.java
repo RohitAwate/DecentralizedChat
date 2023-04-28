@@ -162,10 +162,10 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
                 // Create a copy of own peers and send to caller
                 // Add self to the list
                 Group copy = new Group(group);
-                copy.peers.add(this);
+                copy.peerAddresses.add(this.address);
 
                 // Now add this peer to your own list
-                group.peers.add(peer);
+                group.peerAddresses.add(peer.getAddress());
 
                 return copy;
             }
@@ -242,7 +242,7 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
         }
     }
 
-    private Result<?> dispatch(Operation<?> operation) {
+    private Result<?> dispatch(Operation<?> operation) throws RemoteException {
         switch (operation.type) {
             case JOIN_GROUP: {
                 ChatPeer peer = (ChatPeer) operation.payload;
@@ -259,7 +259,7 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
                 Group group = groups.get(operation.groupName);
                 ChatPeer peer = (ChatPeer) operation.payload;
 
-                group.peers.removeIf(cp -> {
+                group.peerAddresses.removeIf(cp -> {
                     try {
                         return cp.getAddress().equals(peer.getAddress());
                     } catch (RemoteException e) {
@@ -291,9 +291,9 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
         }
     }
 
-    private void addToGroup(ChatPeer peer, String groupName) {
+    private void addToGroup(ChatPeer peer, String groupName) throws RemoteException {
         Group group = groups.get(groupName);
-        group.peers.add(peer);
+        group.peerAddresses.add(peer.getAddress());
     }
 
     /**

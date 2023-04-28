@@ -1,7 +1,6 @@
 package chat.backend.paxos;
 
 import chat.logging.Logger;
-import chat.backend.ChatPeer;
 import chat.backend.Group;
 import chat.backend.Result;
 
@@ -210,9 +209,8 @@ public class PaxosEngine {
     private static List<PaxosParticipant> connectToPeers(Group group) throws NotBoundException, RemoteException {
         List<PaxosParticipant> participants = new ArrayList<>();
 
-        for (ChatPeer peer : group.peers) {
+        for (InetSocketAddress address : group.peerAddresses) {
             try {
-                InetSocketAddress address = peer.getAddress();
                 String url = String.format("rmi://%s:%d/DistributedChatPeer", address.getHostString(), address.getPort());
                 PaxosParticipant participant = (PaxosParticipant) Naming.lookup(url);
                 participants.add(participant);
