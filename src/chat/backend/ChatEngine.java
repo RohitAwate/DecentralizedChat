@@ -9,7 +9,9 @@ import chat.logging.Logger;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
-import java.nio.file.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -28,24 +30,24 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
     public ChatEngine(String displayName, int port) throws RemoteException, MalformedURLException {
         super();
 
-        this.displayName = displayName;
-
         Map<String, Group> tempGroups;
-        try (FileInputStream file = new FileInputStream(String.format("%s-%s.dat", displayName, port))) {
+        String fileName = String.format("app_data/%s-%d/groups.dat", displayName, port);
+        try (FileInputStream file = new FileInputStream(fileName)) {
             ObjectInputStream stream = new ObjectInputStream(file);
             tempGroups = (Map<String, Group>) stream.readObject();
         } catch (IOException | ClassNotFoundException e) {
             tempGroups = new HashMap<>();
         }
 
+        this.displayName = displayName;
+        this.address = new InetSocketAddress("localhost", port);
         this.groups = tempGroups;
-        address = new InetSocketAddress("localhost", port);
 
         LocateRegistry.createRegistry(port);
         Naming.rebind(String.format("rmi://localhost:%d/DistributedChatPeer", port), this);
         Logger.logInfo(String.format("Chat engine start on port %s", address));
 
-        paxosEngine = new PaxosEngine();
+        this.paxosEngine = new PaxosEngine();
     }
 
     @Override
@@ -73,11 +75,12 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
             try {
                 paxosEngine.run(proposal, group);
             } catch (NotBoundException | RemoteException e) {
-                return;
+                // Ignore, they're probably offline
             }
         }
 
-        try (FileOutputStream file = new FileOutputStream(String.format("%s-%s.dat", displayName, address.getPort()))) {
+        String fileName = String.format("app_data/%s-%d/groups.dat", displayName, address.getPort());
+        try (FileOutputStream file = new FileOutputStream(fileName)) {
             ObjectOutputStream stream = new ObjectOutputStream(file);
             stream.writeObject(groups);
         } catch (IOException e) {
@@ -273,8 +276,12 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
             case SEND_FILE: {
                 Group group = groups.get(operation.groupName);
                 FileTransferHandle handle = (FileTransferHandle) operation.payload;
+
+                String fileName = String.format("app_data/%s-%d/received_files/%s", displayName, address.getPort(), handle.path);
+                Path destinationPath = FileSystems.getDefault().getPath(fileName);
+
                 try {
-                    Path destinationPath = FileSystems.getDefault().getPath(handle.path);
+                    Files.createDirectories(destinationPath.getParent());
                     Files.write(destinationPath, handle.bytes);
                     group.addMessageToGroupHistory(
                             new Message(handle.from,
