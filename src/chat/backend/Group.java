@@ -3,7 +3,9 @@ package chat.backend;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * This class represents a group chat in the application.
@@ -18,7 +20,7 @@ public class Group implements Serializable {
     /**
      * The list of peer addresses in the group.
      */
-    public final List<InetSocketAddress> peerAddresses;
+    public final Set<InetSocketAddress> peerAddresses;
 
     /**
      * The list of messages in the group's chat history.
@@ -32,7 +34,7 @@ public class Group implements Serializable {
      */
     public Group(String name) {
         this.name = name;
-        this.peerAddresses = new ArrayList<>();
+        this.peerAddresses = new HashSet<>();
         this.history = new ArrayList<>();
     }
 
@@ -43,7 +45,7 @@ public class Group implements Serializable {
      */
     public Group(Group other) {
         this.name = other.name;
-        this.peerAddresses = new ArrayList<>(other.peerAddresses);
+        this.peerAddresses = new HashSet<>(other.peerAddresses);
         this.history = new ArrayList<>(other.history);
     }
 

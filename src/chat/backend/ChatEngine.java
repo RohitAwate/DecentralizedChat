@@ -63,6 +63,20 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
         Logger.logInfo(String.format("Chat engine start on port %s", address));
 
         this.paxosEngine = new PaxosEngine();
+
+        syncUp();
+    }
+
+    private void syncUp() {
+        // Creating a copy since the original might get updated
+        // as a part of sync up causing concurrent updates.
+        Map<String, Group> copy = new HashMap<>(groups);
+
+        for (Group group : copy.values()) {
+            for (InetSocketAddress peerAddress : group.peerAddresses) {
+                joinGroup(peerAddress.getHostString(), peerAddress.getPort(), group.name);
+            }
+        }
     }
 
     @Override
