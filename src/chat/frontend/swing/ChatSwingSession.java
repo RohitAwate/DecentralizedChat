@@ -1,57 +1,92 @@
 package chat.frontend.swing;
 
-import chat.backend.ChatEngine;
+import chat.backend.ChatBackend;
 import chat.backend.Group;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.UUID;
 
+/**
+ * Represents a user session for the P2P chat application.
+ */
 public class ChatSwingSession {
 
-	private final String sessionId = UUID.randomUUID().toString();
-	@Nullable
-	private ChatEngine chatEngine;
-	@Nullable
-	private Group currentlyActiveGroup;
+    @Nullable
+    private ChatBackend backend;
+    @Nullable
+    private Group currentlyActiveGroup;
 
-	public boolean isLoggedIn() {
-		return chatEngine != null;
-	}
+    /**
+     * Checks if the user is logged in to the chat engine.
+     *
+     * @return true if the user is logged in, false otherwise
+     */
+    public boolean isLoggedIn() {
+        return backend != null;
+    }
 
-	@Nullable
-	public List<Group> getGroups() {
-		return chatEngine.getGroups();
-	}
+    /**
+     * Returns a list of all the groups available in the chat engine.
+     *
+     * @return a list of groups, or null if the user is not logged in
+     */
+    @Nullable
+    public List<Group> getGroups() {
+        return backend.getGroups();
+    }
 
-	public String getSessionId() {
-		return sessionId;
-	}
+    /**
+     * Checks if the user is currently in an active group.
+     *
+     * @return true if the user is in an active group, false otherwise
+     */
+    public boolean ifAnyGroupActive() {
+        return currentlyActiveGroup != null;
+    }
 
-	public boolean ifAnyGroupActive() {
-		return currentlyActiveGroup != null;
-	}
+    /**
+     * Returns the chat engine instance associated with this user session.
+     *
+     * @return the chat engine, or null if the user is not logged in
+     */
+    @Nullable
+    public ChatBackend getBackend() {
+        return backend;
+    }
 
-	@Nullable
-	public ChatEngine getChatEngine() {
-		return chatEngine;
-	}
+    /**
+     * Sets the chat engine instance associated with this user session.
+     *
+     * @param backend the chat engine instance to set
+     */
+    public void setBackend(@Nullable ChatBackend backend) {
+        this.backend = backend;
+    }
 
-	public void setChatEngine(@Nullable ChatEngine chatEngine) {
-		this.chatEngine = chatEngine;
-	}
+    /**
+     * Returns the currently active group for this user session.
+     *
+     * @return the active group, or null if no group is active
+     */
+    @Nullable
+    public Group getCurrentlyActiveGroup() {
+        return currentlyActiveGroup;
+    }
 
-	@Nullable
-	public Group getCurrentlyActiveGroup() {
-		return currentlyActiveGroup;
-	}
+    /**
+     * Sets the currently active group for this user session.
+     *
+     * @param currentlyActiveGroup the group to set as active
+     */
+    public void setCurrentlyActiveGroup(@Nullable Group currentlyActiveGroup) {
+        this.currentlyActiveGroup = currentlyActiveGroup;
+    }
 
-	public void setCurrentlyActiveGroup(@Nullable Group currentlyActiveGroup) {
-		this.currentlyActiveGroup = currentlyActiveGroup;
-	}
-
-	public void purge() {
-		currentlyActiveGroup = null;
-		chatEngine = null;
-	}
+    /**
+     * Purges this user session by resetting the currently active group and chat engine instances to null.
+     */
+    public void purge() {
+        currentlyActiveGroup = null;
+        backend = null;
+    }
 }

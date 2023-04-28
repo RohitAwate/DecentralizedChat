@@ -1,8 +1,8 @@
 package chat.backend.paxos;
 
-import chat.logging.Logger;
 import chat.backend.Group;
 import chat.backend.Result;
+import chat.logging.Logger;
 
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -18,7 +18,7 @@ import java.util.concurrent.*;
 import static chat.backend.paxos.PaxosResponse.Status.ACCEPTED;
 
 /**
- * PaxosEngine runs the Paxos protocol on behalf of a replica.
+ * PaxosEngine runs the Paxos protocol on behalf of a peer.
  * It executes all stages of the protocol.
  */
 public class PaxosEngine {
@@ -38,7 +38,7 @@ public class PaxosEngine {
      * Represents the various stages in the Paxos protocol.
      */
     private enum PaxosStage {
-        PREPARE, ACCEPT, LEARN;
+        PREPARE, ACCEPT, LEARN
     }
 
     /**
@@ -47,7 +47,7 @@ public class PaxosEngine {
      * the proposal received a consensual acceptance or some other situation.
      *
      * @param paxosProposal - proposal to run Paxos for
-     * @param group
+     * @param group         - group for which Paxos is running
      * @return - Result of the process
      */
     public Result<?> run(PaxosProposal paxosProposal, Group group) throws NotBoundException, RemoteException {
@@ -106,7 +106,7 @@ public class PaxosEngine {
      *
      * @param responses    - responses from participants
      * @param stage        - stage of the protocol
-     * @param participants
+     * @param participants - list of protocol participants
      * @return ConsensusResponse enum
      */
     private ConsensusResponse isConsensus(List<PaxosResponse> responses, PaxosStage stage, List<PaxosParticipant> participants) {
@@ -170,7 +170,7 @@ public class PaxosEngine {
      *
      * @param paxosProposal - proposal used in the protocol
      * @param stage         - stage currently being executed
-     * @param participants
+     * @param participants  - list of protocol participants
      * @return responses from the participants
      */
     private List<PaxosResponse> dispatch(PaxosProposal paxosProposal, PaxosStage stage, List<PaxosParticipant> participants) {

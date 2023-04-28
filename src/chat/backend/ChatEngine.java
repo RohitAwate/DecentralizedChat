@@ -23,13 +23,28 @@ import static chat.backend.Operation.OpType.*;
 
 public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBackend, PaxosParticipant {
 
+    /**
+     * Socket address of the peer.
+     */
     private final InetSocketAddress address;
+
+    /**
+     * Display name of the peer.
+     */
     private final String displayName;
+
+    /**
+     * Groups that the peer is a part of.
+     */
     private final Map<String, Group> groups;
 
+    /**
+     * Create a ChatEngine instance for the given display name and port.
+     */
     public ChatEngine(String displayName, int port) throws RemoteException, MalformedURLException {
         super();
 
+        // Load the previous state (groups) from disk
         Map<String, Group> tempGroups;
         String fileName = String.format("app_data/%s-%d/groups.dat", displayName, port);
         try (FileInputStream file = new FileInputStream(fileName)) {
@@ -69,6 +84,7 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
 
     @Override
     public void shutdown() {
+        // Send a log off message to connected peers
         for (Group group : groups.values()) {
             PaxosProposal proposal = new PaxosProposal(new Operation<>(LOG_OFF, group.name, this));
 
@@ -79,6 +95,7 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
             }
         }
 
+        // Save groups to disk for next time
         String fileName = String.format("app_data/%s-%d/groups.dat", displayName, address.getPort());
         try (FileOutputStream file = new FileOutputStream(fileName)) {
             ObjectOutputStream stream = new ObjectOutputStream(file);
@@ -109,12 +126,15 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
         }
     }
 
+    /**
+     * Private wrapper class used for file transfers.
+     */
     private static class FileTransferHandle implements Serializable {
         final String from;
         final String path;
         final byte[] bytes;
 
-        public FileTransferHandle(String from, String path, byte[] bytes) {
+        private FileTransferHandle(String from, String path, byte[] bytes) {
             this.from = from;
             this.path = path;
             this.bytes = bytes;
@@ -245,11 +265,15 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
         }
     }
 
+    /**
+     * Helper method that actually runs operations on a peer.
+     */
     private Result<?> dispatch(Operation<?> operation) throws RemoteException {
         switch (operation.type) {
             case JOIN_GROUP: {
                 ChatPeer peer = (ChatPeer) operation.payload;
-                addToGroup(peer, operation.groupName);
+                Group group = groups.get(operation.groupName);
+                group.peerAddresses.add(peer.getAddress());
                 return Result.success("Added new peer to group");
             }
             case SEND_MSG: {
@@ -296,11 +320,6 @@ public class ChatEngine extends UnicastRemoteObject implements ChatPeer, ChatBac
             default:
                 return Result.failure("Unknown operation: " + operation.type);
         }
-    }
-
-    private void addToGroup(ChatPeer peer, String groupName) throws RemoteException {
-        Group group = groups.get(groupName);
-        group.peerAddresses.add(peer.getAddress());
     }
 
     /**

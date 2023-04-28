@@ -10,6 +10,9 @@ import java.util.concurrent.ExecutionException;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
+/**
+ * Main class of the app.
+ */
 public class ChatSwingMain extends JFrame {
 
 	private final ChatSwingLoginPanel chatSwingLoginPanel;
@@ -46,17 +49,21 @@ public class ChatSwingMain extends JFrame {
 		requestFocus();
 		requestFocusInWindow();
 
+		// Trigger shutdown when the window is closed
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
 				if (session.isLoggedIn()) {
-					session.getChatEngine().shutdown();
+					session.getBackend().shutdown();
 				}
 				System.exit(0);
 			}
 		});
 	}
 
+	/**
+	 * Entrypoint for the app.
+	 */
 	public static void main(String[] args) {
 		SwingUtilities.invokeLater(() -> {
 			try {
@@ -68,6 +75,9 @@ public class ChatSwingMain extends JFrame {
 		});
 	}
 
+	/**
+	 * Refresh all the panels in the UI to reflect the latest state.
+	 */
 	protected void refreshUI()
 			throws MalformedURLException, IllegalArgumentException, RemoteException {
 		chatSwingLoginPanel.refreshUI();

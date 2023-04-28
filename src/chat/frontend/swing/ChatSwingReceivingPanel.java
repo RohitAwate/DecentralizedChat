@@ -17,6 +17,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * This panel shows the messages in the app.
+ */
 public class ChatSwingReceivingPanel extends JPanel {
 
     private final ChatSwingMain parent;
@@ -56,6 +59,9 @@ public class ChatSwingReceivingPanel extends JPanel {
         new ChatSwingWorkerViewUpdate(Executors.newScheduledThreadPool(1)).schedule();
     }
 
+    /**
+     * Refresh all the panels in the UI to reflect the latest state.
+     */
     protected void refreshUI()
             throws MalformedURLException, IllegalArgumentException, RemoteException {
         if (!session.isLoggedIn()) {
@@ -71,6 +77,9 @@ public class ChatSwingReceivingPanel extends JPanel {
         groupMessagesJTextArea.setEnabled(session.isLoggedIn());
     }
 
+    /**
+     * Worker thread that is used to periodically grab the latest changes and update the state.
+     */
     private class ChatSwingWorkerViewUpdate extends SwingWorker<List<Message>, Message> {
 
         private final ScheduledExecutorService service;

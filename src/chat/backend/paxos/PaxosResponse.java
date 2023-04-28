@@ -18,7 +18,7 @@ public class PaxosResponse implements Serializable {
 	public PaxosProposal paxosProposal;
 
 	// Only available if the response is from the LEARN stage
-	public Result learnResult;
+	public Result<?> learnResult;
 
 	/**
 	 * Constructs a new PaxosResponse with the given status and data.

@@ -5,15 +5,18 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface ChatPeer extends Remote {
-	Group acceptJoin(String name, ChatPeer peer) throws RemoteException;
+	/**
+	 * Accept a new peer into a group.
+	 */
+	Group acceptJoin(String groupName, ChatPeer peer) throws RemoteException;
 
 	/**
 	 * Returns the address of this participant.
-	 *
-	 * @return the address of this participant
-	 * @throws RemoteException if there is a remote error
 	 */
 	InetSocketAddress getAddress() throws RemoteException;
 
+	/**
+	 * Get the display name of the peer.
+	 */
 	String getDisplayName() throws RemoteException;
 }

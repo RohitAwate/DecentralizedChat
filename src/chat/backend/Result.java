@@ -3,7 +3,7 @@ package chat.backend;
 import java.io.Serializable;
 
 /**
- * This class represents the result of an operation on a key-value store.
+ * This class represents the result of an Operation in Paxos.
  */
 public class Result<T> implements Serializable {
     /**

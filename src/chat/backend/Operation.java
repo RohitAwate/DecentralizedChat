@@ -3,14 +3,24 @@ package chat.backend;
 import java.io.Serializable;
 import java.util.Objects;
 
-
+/**
+ * Represents the operation that is to be performed as a result of Paxos.
+ * @param <T> type of the payload argument
+ */
 public class Operation<T> implements Serializable {
-
 	/**
 	 * The type of this operation.
 	 */
 	public final OpType type;
+
+	/**
+	 * The name of the group that this operation targets.
+	 */
 	public final String groupName;
+
+	/**
+	 * Payload argument required for operation.
+	 */
 	public final T payload;
 
 	/**
@@ -43,6 +53,6 @@ public class Operation<T> implements Serializable {
 	 * The type of the operation.
 	 */
 	public enum OpType {
-		JOIN_GROUP, SEND_MSG, SEND_FILE, LOG_OFF, SYNC_UP
+		JOIN_GROUP, SEND_MSG, SEND_FILE, LOG_OFF
 	}
 }

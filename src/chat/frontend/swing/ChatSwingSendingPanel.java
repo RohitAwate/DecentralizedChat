@@ -12,6 +12,9 @@ import java.rmi.RemoteException;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
+/**
+ * This panel allows the user to send a message or upload a file.
+ */
 public class ChatSwingSendingPanel extends JPanel {
 
     private final ChatSwingMain parent;
@@ -40,10 +43,10 @@ public class ChatSwingSendingPanel extends JPanel {
                     // Call file upload from here
                     String path = selectedFile.getAbsolutePath();
                     try {
-                        boolean success = session.getChatEngine().sendFile(selectedFile, session.getCurrentlyActiveGroup());
+                        boolean success = session.getBackend().sendFile(selectedFile, session.getCurrentlyActiveGroup());
                         if (success) {
                             session.getCurrentlyActiveGroup().addMessageToGroupHistory(
-                                    new Message(session.getChatEngine().getDisplayName(),
+                                    new Message(session.getBackend().getDisplayName(),
                                             "Sent file: " + selectedFile.getName(),
                                             System.currentTimeMillis())
                             );
@@ -75,8 +78,8 @@ public class ChatSwingSendingPanel extends JPanel {
                         throw new IllegalArgumentException("Please select a group first!");
                     }
                     session.getCurrentlyActiveGroup()
-                            .addMessageToGroupHistory(new Message(session.getChatEngine().getDisplayName(), message, System.currentTimeMillis()));
-                    session.getChatEngine().sendMessage(message, session.getCurrentlyActiveGroup());
+                            .addMessageToGroupHistory(new Message(session.getBackend().getDisplayName(), message, System.currentTimeMillis()));
+                    session.getBackend().sendMessage(message, session.getCurrentlyActiveGroup());
                 }
                 parent.refreshUI();
             } catch (Exception e) {
@@ -86,6 +89,9 @@ public class ChatSwingSendingPanel extends JPanel {
         add(sendMessageButton);
     }
 
+    /**
+     * Refresh all the panels in the UI to reflect the latest state.
+     */
     protected void refreshUI() {
         messageTextField.reset();
         fileChooseButton.setEnabled(session.isLoggedIn());
