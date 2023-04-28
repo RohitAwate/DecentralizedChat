@@ -30,7 +30,7 @@ public class ChatSwingSendingPanel extends JPanel {
 
         fileChooseButton = new JButton("Upload");
         fileChooser = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
-        fileChooseButton.setPreferredSize(new Dimension(75, 25));
+        fileChooseButton.setPreferredSize(new Dimension(100, 25));
         fileChooseButton.setEnabled(false);
         fileChooseButton.addActionListener(e -> {
             int chosenOption = fileChooser.showOpenDialog(null);
