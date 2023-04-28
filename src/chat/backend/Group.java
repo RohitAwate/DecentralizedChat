@@ -64,6 +64,13 @@ public class Group implements Serializable {
      * @param message the message to add to the group's chat history.
      */
     public void addMessageToGroupHistory(Message message) {
+        if (history.size() > 1) {
+            Message lastMessage = history.get(history.size() - 1);
+            if (message.contents.equals(lastMessage.contents) && message.from.equals(lastMessage.from)) {
+                return;
+            }
+        }
+
         history.add(message);
     }
 
